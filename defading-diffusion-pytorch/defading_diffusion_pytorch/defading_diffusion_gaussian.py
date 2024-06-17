@@ -326,6 +326,9 @@ class GaussianDiffusion(nn.Module):
         self.discrete = discrete
 
     def get_fade_kernel(self, dims, std):
+        # Comments by Riti
+        # add Bernoulli masking here
+        # return the mask, kspace, image
         fade_kernel = tgm.image.get_gaussian_kernel2d(dims, std)
         fade_kernel = fade_kernel / torch.max(fade_kernel)
         fade_kernel = torch.ones_like(fade_kernel) - fade_kernel
@@ -356,6 +359,8 @@ class GaussianDiffusion(nn.Module):
 
         rand_fade_kernels = None
         sample_device = faded_recon_sample.device
+        # Comments by Riti:
+        # Don't need the following if condition (Lines 364-372)
         if 'Random' in self.fade_routine:
             rand_fade_kernels = []
             rand_x = torch.randint(0, self.image_size + 1, (batch_size,), device=sample_device).long()
@@ -370,12 +375,16 @@ class GaussianDiffusion(nn.Module):
 
         for i in range(t):
             with torch.no_grad():
+                # Comments by Riti:
+                # Don't need the following if condition
                 if rand_fade_kernels is not None:
                     faded_recon_sample = torch.stack([rand_fade_kernels[:, i].to(sample_device),
                                                       rand_fade_kernels[:, i].to(sample_device),
                                                       rand_fade_kernels[:, i].to(sample_device)],
                                                      1) * faded_recon_sample
                 else:
+                    # Comments by Riti:
+                    # Only need the following line of sample corruption
                     faded_recon_sample = self.fade_kernels[i].to(sample_device) * faded_recon_sample
 
         if self.discrete:
@@ -395,6 +404,8 @@ class GaussianDiffusion(nn.Module):
             if direct_recons is None:
                 direct_recons = recon_sample
 
+            # Comments by Riti:
+            # Don't need the following if condition
             if self.sampling_routine == 'default':
                 for i in range(t - 1):
                     with torch.no_grad():
@@ -405,7 +416,8 @@ class GaussianDiffusion(nn.Module):
                         else:
                             recon_sample = self.fade_kernels[i].to(sample_device) * recon_sample
                 faded_recon_sample = recon_sample
-
+            # Comments by Riti:
+            # Only need the following condition (cold diffusion) Lines 423-424, 430, 432-437
             elif self.sampling_routine == 'x0_step_down':
                 for i in range(t):
                     with torch.no_grad():
@@ -495,6 +507,8 @@ class GaussianDiffusion(nn.Module):
 
     def q_sample(self, x_start, t):
         with torch.no_grad():
+            # Comments by Riti:
+            # Don't need lines 512-521
             rand_fade_kernels = None
             if 'Random' in self.fade_routine:
                 rand_fade_kernels = []
@@ -510,11 +524,15 @@ class GaussianDiffusion(nn.Module):
         x = x_start
         for i in range(max_iters + 1):
             with torch.no_grad():
+                # Comments by Riti:
+                # Don't need lines 529-533
                 if rand_fade_kernels is not None:
                     x = torch.stack([rand_fade_kernels[:, i],
                                      rand_fade_kernels[:, i],
                                      rand_fade_kernels[:, i]], 1) * x
                 else:
+                    # Comments by Riti:
+                    # Convert the below line to calling get_fade_kernel
                     x = self.fade_kernels[i] * x
                 all_fades.append(x)
 
@@ -550,6 +568,8 @@ class GaussianDiffusion(nn.Module):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
         assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
+        # Comments by Riti:
+        # Don't need lines 573
         self.fade_kernels = self.fade_kernels.to(device)
         return self.p_losses(x, t, *args, **kwargs)
 
