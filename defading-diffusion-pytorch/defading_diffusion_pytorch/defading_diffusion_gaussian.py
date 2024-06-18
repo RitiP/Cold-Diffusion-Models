@@ -21,6 +21,7 @@ from pytorch_msssim import ssim
 import cv2
 import numpy as np
 import imageio
+import pickle
 
 # from torch.utils.tensorboard import SummaryWriter
 
@@ -698,7 +699,7 @@ class Trainer(object):
         self.save_and_sample_every = save_and_sample_every
 
         self.batch_size = train_batch_size
-        self.image_size = diffusion_model.module.image_size
+        self.image_size = diffusion_model.image_size
         self.gradient_accumulate_every = gradient_accumulate_every
         self.train_num_steps = train_num_steps
 
@@ -806,7 +807,7 @@ class Trainer(object):
                 batches = self.batch_size
                 og_img = next(self.dl).cuda()
                 # xt, direct_recons, all_images = self.ema_model.sample(batch_size=batches, faded_recon_sample=og_img)
-                xt, direct_recons, all_images = self.ema_model.module.sample(batch_size=batches, faded_recon_sample=og_img)
+                xt, direct_recons, all_images = self.ema_model.sample(batch_size=batches, faded_recon_sample=og_img)
                 og_img = (og_img + 1) * 0.5
                 utils.save_image(og_img, str(self.results_folder / f'sample-og-{milestone}.png'), nrow=6)
 

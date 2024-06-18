@@ -25,6 +25,7 @@ def del_folder(path):
 create = 0
 
 if create:
+    print('Dataset Creation started')
     trainset = torchvision.datasets.CIFAR10(
             root='./data', train=True, download=True)
     root = './root_cifar10/'
@@ -37,8 +38,9 @@ if create:
 
     for idx in range(len(trainset)):
         img, label = trainset[idx]
-        print(idx)
+        # print(idx)
         img.save(root + str(label) + '/' + str(idx) + '.png')
+    print('Dataset Created')
 
 
 parser = argparse.ArgumentParser()
