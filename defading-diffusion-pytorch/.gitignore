@@ -2,6 +2,7 @@
 results/
 data/
 root_cifar10/
+results*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

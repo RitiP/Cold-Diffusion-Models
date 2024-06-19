@@ -22,7 +22,7 @@ parser.add_argument('--residual', action="store_true")
 args = parser.parse_args()
 print(args)
 
-model = Model(resolution=255,
+model = Model(resolution=256,
               in_channels=1,
               out_ch=1,
               ch=128,
@@ -33,7 +33,7 @@ model = Model(resolution=255,
 
 diffusion = GaussianDiffusion(
     model,
-    image_size=255,
+    image_size=256,
     device_of_kernel='cuda',
     channels=1,
     timesteps=args.time_steps,
@@ -47,8 +47,8 @@ diffusion = GaussianDiffusion(
 trainer = Trainer(
     diffusion,
     args.data_path,
-    image_size=255,
-    train_batch_size=32,
+    image_size=256,
+    train_batch_size=8,
     train_lr=2e-5,
     train_num_steps=args.train_steps,
     gradient_accumulate_every=2,

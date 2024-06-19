@@ -605,7 +605,6 @@ class DatasetIXI(data.Dataset):
         self.image_size = image_size
         with open(folder, "rb") as f:
             img, spec = pickle.load(f)
-        img = img[:, :-1, :-1]
         self.paths = img
 
         self.transform = transforms.Compose([
@@ -711,7 +710,7 @@ class Trainer(object):
             fp16=False,
             step_start_ema=2000,
             update_ema_every=10,
-            save_and_sample_every=10000,
+            save_and_sample_every=10,
             results_folder='./results',
             load_path=None,
             dataset=None

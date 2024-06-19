@@ -328,6 +328,7 @@ class GaussianDiffusion(nn.Module):
 
     def get_kernel(self, spec=None):
         # Comments by Riti
+        # pdb.set_trace()
         p_at_edge = 0.95
         shape = (spec.shape[-2], spec.shape[-1])
         bernoulli_mask_cache = dict()
@@ -336,7 +337,7 @@ class GaussianDiffusion(nn.Module):
             # print(img)
             h = [s // 2 for s in shape]
             # print(h)
-            r = [torch.arange(s, dtype=np.float32) - h for s, h in zip(shape, h)]
+            r = [np.arange(s, dtype=np.float32) - h for s, h in zip(shape, h)]
             # print(r)
             r = [x ** 2 for x in r]
             # print(r)
@@ -348,17 +349,20 @@ class GaussianDiffusion(nn.Module):
             # print(bernoulli_mask_cache)
             # print('Bernoulli probability at edge = %.5f' % m[h[0], 0])
             # print('Average Bernoulli probability = %.5f' % np.mean(m))
+        # pdb.set_trace()
         mask = bernoulli_mask_cache[p_at_edge]
-        keep = torch.tensor((np.random.uniform(0.0, 1.0, size=spec.shape)**2 < mask)).to(self.device_of_kernel)
+        keep = np.random.uniform(0.0, 1.0, size=spec.shape)**2 < mask
         keep = keep & keep[::-1, ::-1]
-        if len(keep.shape) < len(spec.shape):
-            # spec is probably of size b,c,h,w. So we need to change the shape of keep from h,w to 1,1,h,w
-            keep = keep.unsqueeze(0).unsqueeze(0)
-        sval = spec * keep
-        smsk = keep.astype(torch.float32)
+        # if len(keep.shape) < len(spec.shape):
+        #     # spec is probably of size b,c,h,w. So we need to change the shape of keep from h,w to 1,1,h,w
+        #     keep = keep.unsqueeze(0).unsqueeze(0)
+        # keep = torch.tensor(keep).to(self.device_of_kernel)
+        # pdb.set_trace()
+        sval = spec.cpu() * keep
+        smsk = keep.astype(np.float32)
         spec = torch.fft.fftshift(sval / (mask + ~keep)) # Add 1.0 to not-kept values to prevent div-by-zero.
         #spec = fftshift2d(sval, ifft=True) # Add 1.0 to not-kept values to prevent div-by-zero.
-        img = torch.real(torch.fft.ifft2(spec)).astype(torch.float32)
+        img = torch.tensor(torch.real(torch.fft.ifft2(spec)).cpu().numpy().astype(np.float32)).to(self.device_of_kernel)
         return img, sval
 
 
@@ -383,13 +387,14 @@ class GaussianDiffusion(nn.Module):
             faded_recon_sample = (faded_recon_sample * 255)
             faded_recon_sample = faded_recon_sample.int().float() / 255
             faded_recon_sample = faded_recon_sample * 2 - 1
-
+        # pdb.set_trace()
         xt = faded_recon_sample
         direct_recons = None
         recon_sample = None
 
         while t:
             step = torch.full((batch_size,), t - 1, dtype=torch.long).cuda()
+            # pdb.set_trace()
             recon_sample = self.defade_fn(faded_recon_sample, step)
 
             if direct_recons is None:
@@ -458,11 +463,12 @@ class GaussianDiffusion(nn.Module):
         return x0_list, xt_list
 
     def q_sample(self, x_start, t):
-        with torch.no_grad():
+        # with torch.no_grad():
             # Comments by Riti:
             # Don't need lines 512-521
         max_iters = torch.max(t)
         all_fades = []
+        # pdb.set_trace()
         x = x_start
         for i in range(max_iters + 1):
             with torch.no_grad():
@@ -535,7 +541,7 @@ class DatasetIXI(data.Dataset):
         self.image_size = image_size
         with open(folder, "rb") as f:
             img, spec = pickle.load(f)
-        img = img[:, :-1, :-1]
+        # img = img[:, :-1, :-1]
         self.paths = img
 
         self.transform = transforms.Compose([
@@ -641,7 +647,7 @@ class Trainer(object):
             fp16=False,
             step_start_ema=2000,
             update_ema_every=10,
-            save_and_sample_every=10000,
+            save_and_sample_every=10,
             results_folder='./results',
             load_path=None,
             dataset=None
@@ -766,7 +772,7 @@ class Trainer(object):
                 milestone = self.step // self.save_and_sample_every
                 batches = self.batch_size
                 og_img = next(self.dl).cuda()
-                pdb.set_trace()
+                # pdb.set_trace()
                 # xt, direct_recons, all_images = self.ema_model.sample(batch_size=batches, faded_recon_sample=og_img)
                 xt, direct_recons, all_images = self.ema_model.sample(batch_size=batches, faded_recon_sample=og_img)
                 og_img = (og_img + 1) * 0.5
