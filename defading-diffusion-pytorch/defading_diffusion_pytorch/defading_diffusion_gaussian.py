@@ -12,7 +12,7 @@ from torch.optim import Adam
 from torchvision import transforms, utils
 
 from einops import rearrange
-
+import pdb
 import torchgeometry as tgm
 import os
 import errno
@@ -567,6 +567,7 @@ class GaussianDiffusion(nn.Module):
 
     def forward(self, x, *args, **kwargs):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
+        # pdb.set_trace()
         assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
         # Comments by Riti:
@@ -596,6 +597,32 @@ class Dataset(data.Dataset):
         path = self.paths[index]
         img = Image.open(path)
         return self.transform(img)
+
+class DatasetIXI(data.Dataset):
+    def __init__(self, folder, image_size, exts=['jpg', 'jpeg', 'png']):
+        super().__init__()
+        self.folder = folder
+        self.image_size = image_size
+        with open(folder, "rb") as f:
+            img, spec = pickle.load(f)
+        img = img[:, :-1, :-1]
+        self.paths = img
+
+        self.transform = transforms.Compose([
+            transforms.RandomCrop(image_size, padding=4),
+            transforms.Resize(image_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda t: (t * 2) - 1)
+        ])
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, index):
+        img = self.paths[index]
+        return self.transform(Image.fromarray(img))
+
 
 
 class DatasetCifar10(data.Dataset):
@@ -709,8 +736,11 @@ class Trainer(object):
             self.ds = DatasetCelebA(folder, image_size)
         elif dataset == 'celebA_test':
             self.ds = DatasetCelebATest(folder, image_size)
+        elif dataset == 'ixi':
+            self.ds = DatasetIXI(folder,image_size)
         else:
             self.ds = Dataset(folder, image_size)
+        # pdb.set_trace()
         self.dl = cycle(
             data.DataLoader(self.ds,
                             batch_size=train_batch_size,
@@ -806,6 +836,7 @@ class Trainer(object):
                 milestone = self.step // self.save_and_sample_every
                 batches = self.batch_size
                 og_img = next(self.dl).cuda()
+                pdb.set_trace()
                 # xt, direct_recons, all_images = self.ema_model.sample(batch_size=batches, faded_recon_sample=og_img)
                 xt, direct_recons, all_images = self.ema_model.sample(batch_size=batches, faded_recon_sample=og_img)
                 og_img = (og_img + 1) * 0.5
