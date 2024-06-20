@@ -7,12 +7,12 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--time_steps', default=50, type=int)
-parser.add_argument('--train_steps', default=700000, type=int)
+parser.add_argument('--time_steps', default=100, type=int)
+parser.add_argument('--train_steps', default=1000, type=int)
 parser.add_argument('--save_folder', default=None, type=str)
 parser.add_argument('--kernel_std', default=0.1, type=float)
 parser.add_argument('--load_path', default=None, type=str)
-parser.add_argument('--data_path', default='/scratch/svora7/ixi_valid.pkl', type=str)
+parser.add_argument('--data_path', default='/scratch/kjha9/ixi_valid.pkl', type=str)
 parser.add_argument('--fade_routine', default='Random_Incremental', type=str)
 parser.add_argument('--sampling_routine', default='x0_step_down', type=str)
 parser.add_argument('--discrete', action="store_true")

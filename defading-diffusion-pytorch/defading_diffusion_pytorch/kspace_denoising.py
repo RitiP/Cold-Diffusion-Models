@@ -360,9 +360,9 @@ class GaussianDiffusion(nn.Module):
         # pdb.set_trace()
         sval = spec.cpu() * keep
         smsk = keep.astype(np.float32)
-        spec = torch.fft.fftshift(sval / (mask + ~keep)) # Add 1.0 to not-kept values to prevent div-by-zero.
+        spec = torch.fft.ifftshift(sval / (mask + ~keep)) # Add 1.0 to not-kept values to prevent div-by-zero.
         #spec = fftshift2d(sval, ifft=True) # Add 1.0 to not-kept values to prevent div-by-zero.
-        img = torch.tensor(torch.real(torch.fft.ifft2(spec)).cpu().numpy().astype(np.float32)).to(self.device_of_kernel)
+        img = torch.tensor(torch.real(torch.fft.fftshift(torch.fft.ifft2(spec))).cpu().numpy().astype(np.float32)).to(self.device_of_kernel)
         return img, sval
 
 
@@ -379,7 +379,7 @@ class GaussianDiffusion(nn.Module):
             with torch.no_grad():
                 # Comments by Riti:
                 # Only need the following line of sample corruption
-                noisy_kspace = torch.fft.fft2(faded_recon_sample)
+                noisy_kspace = torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(faded_recon_sample)))
                 faded_recon_sample, noisy_kspace = self.get_kernel(noisy_kspace)
 
         if self.discrete:
@@ -405,10 +405,10 @@ class GaussianDiffusion(nn.Module):
             if self.sampling_routine == 'x0_step_down':
                 for i in range(t):
                     with torch.no_grad():
-                        noisy_kspace_t = torch.fft.fft2(recon_sample)
+                        noisy_kspace_t = torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(recon_sample)))
                         recon_sample, noisy_kspace_t = self.get_kernel(noisy_kspace_t)
                         recon_sample_sub_1 = recon_sample
-                        noisy_kspace_t = torch.fft.fft2(recon_sample)
+                        noisy_kspace_t = torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(recon_sample)))
                         recon_sample, noisy_kspace_t = self.get_kernel(noisy_kspace_t)
 
                 faded_recon_sample = faded_recon_sample - recon_sample + recon_sample_sub_1
@@ -429,7 +429,7 @@ class GaussianDiffusion(nn.Module):
 
         for i in range(t):
             with torch.no_grad():
-                noisy_kspace = torch.fft.fft2(faded_recon_sample)
+                noisy_kspace = torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(faded_recon_sample)))
                 faded_recon_sample, noisy_kspace = self.get_kernel(noisy_kspace)
                 #faded_recon_sample = self.fade_kernels[i].to(sample_device) * faded_recon_sample
 
@@ -453,7 +453,7 @@ class GaussianDiffusion(nn.Module):
                         #noisy_kspace_t = torch.fft.fft2(recon_sample)
                         #recon_sample, noisy_kspace_t = self.get_kernel(noisy_kspace_t)
                         recon_sample_sub_1 = recon_sample
-                        noisy_kspace_t = torch.fft.fft2(recon_sample)
+                        noisy_kspace_t = torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(recon_sample)))
                         recon_sample, noisy_kspace_t = self.get_kernel(noisy_kspace_t)
                 faded_recon_sample = faded_recon_sample - recon_sample + recon_sample_sub_1
 
@@ -472,7 +472,7 @@ class GaussianDiffusion(nn.Module):
         x = x_start
         for i in range(max_iters + 1):
             with torch.no_grad():
-                noisy_kspace_t = torch.fft.fft2(x)
+                noisy_kspace_t = torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(x)))
                 x, noisy_kspace_t = self.get_kernel(noisy_kspace_t)
                 all_fades.append(x)
 
